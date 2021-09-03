@@ -1,0 +1,61 @@
+// dbms.memory.heap.max_size=4G in conf/neo4j.conf
+
+// load tweet data
+load csv with headers from "file:///tweet_properties_notext.csv" as row create (n:Tweet {id:row.id,
+timestamp:row.timestamp, cleaned_text:row.cleaned_text,
+user_id:row.user_id, 
+replies_count:row.replies_count, 
+quote_count:row.quote_count, 
+overall_sentiment:row.overall_sentiment})
+
+load csv with headers from "file:///keywords.csv" as row create (n:Keyword {id:row.keyword})
+
+load csv with headers from "file:///topic_relations.csv" as row 
+with row.id as num where num<>'id'
+merge (s:Topic {id:num})
+
+// index tweets by id
+create index for (n:Tweet) on (n.id)
+create index for (n:Keyword) on (n.id)
+create index for (n:Topic) on (n.id)
+
+// Load relations (change relation names!)
+load csv with headers from "file:///tweet_relations.csv" as row 
+match (s:Tweet {id:row.subject})
+match (e:Tweet {id:row.object})
+where row.relation = 'quoted_by'
+merge (s)-[r:quoted_by]->(e)
+
+load csv with headers from "file:///tweet_relations.csv" as row 
+match (s:Tweet {id:row.subject})
+where row.relation = 'quoted_by'
+merge (s)-[r:quoted_by]->(e:Tweet {id:row.object})
+
+
+load csv with headers from "file:///tweet_relations.csv" as row 
+match (s:Tweet {id:row.subject})
+match (e:Tweet {id:row.object})
+where row.relation = 'replied_by'
+merge (s)-[r:replied_by]->(e)
+
+load csv with headers from "file:///tweet_relations.csv" as row 
+match (s:Tweet {id:row.subject})
+where row.relation = 'replied_by'
+merge (s)-[r:replied_by]->(e:Tweet {id:row.object})
+
+load csv with headers from "file:///tweet_relations.csv" as row 
+match (s:Tweet {id:row.subject})
+match (e:Topic {id:row.object})
+where row.relation = 'in_topic'
+merge (s)-[r:in_topic]->(e)
+
+load csv with headers from "file:///topic_relations.csv" as row 
+match (s:Topic {id:row.id})
+match (t:Keyword {id:row.keyword})
+merge (s)-[r:has_keyword]->(t)
+ 
+load csv with headers from "file:///keyword_relations.csv" as row 
+match (s:Tweet {id:row.start})
+match (e:Keyword {id:row.end})
+merge (s)-[r:has_keyword]->(e)
+    on create set r.score=row.score

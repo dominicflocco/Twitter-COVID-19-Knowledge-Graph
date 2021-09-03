@@ -1,0 +1,12 @@
+replied_by,0
+quoted_by,1
+tweeted,2
+has_hashtag,3
+mentioned,4
+created_on,5
+announced_on,6
+has_keyword,7
+in_topic,8
+associated_with,9
+has_changepoint,10
+has_peak,11
